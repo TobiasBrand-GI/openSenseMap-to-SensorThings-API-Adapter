@@ -1,0 +1,16 @@
+version: "2"
+services:
+  db:
+    image: ghcr.io/mpfeil/osem-dev-mongo:main
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - api-db-network
+
+volumes:
+  mongo-data:
+networks:
+  api-db-network:
+    external: true
