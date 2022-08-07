@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 'use strict';
 
 /**
@@ -43,12 +41,14 @@ const
   { addCache, clearCache, checkContentType, redactEmail, postToSlack } = require('../helpers/apiUtils'),
   { point } = require('@turf/helpers'),
   classifyTransformer = require('../transformers/classifyTransformer'),
+  sensorthingsTransformer = require('../transformers/sensorthingsTransformer'),
   {
     retrieveParameters,
     parseAndValidateTimeParamsForFindAllBoxes,
     validateFromToTimeParams,
     checkPrivilege
   } = require('../helpers/userParamHelpers'),
+  { transformOneBox } = require('../helpers/staUtils'),
   handleError = require('../helpers/errorHandler'),
   jsonstringify = require('stringify-stream');
 
@@ -246,12 +246,22 @@ const getBoxes = async function getBoxes (req, res, next) {
       }
     }
 
-    stream
-      .pipe(stringifier)
-      .on('error', function (err) {
-        res.end(`Error: ${err.message}`);
-      })
-      .pipe(res);
+    if (req._userParams.sta === 'auto' || req._userParams.sta === 'manual') {
+      stream = stream
+        .pipe(new sensorthingsTransformer())
+        .on('error', function (err) {
+          res.end(`Error: ${err.message}`);
+        })
+        .pipe(res);
+    } else {
+      stream
+        .pipe(stringifier)
+        .on('error', function (err) {
+          res.end(`Error: ${err.message}`);
+        })
+        .pipe(res);
+    }
+
   } catch (err) {
     handleError(err, next);
   }
@@ -359,7 +369,7 @@ const getBoxes = async function getBoxes (req, res, next) {
  */
 
 const getBox = async function getBox (req, res, next) {
-  const { format, boxId } = req._userParams;
+  const { format, boxId, sta } = req._userParams;
 
   try {
     const box = await Box.findBoxById(boxId);
@@ -371,6 +381,11 @@ const getBox = async function getBox (req, res, next) {
 
       return res.send(point(coordinates, box));
     }
+    else if (sta === 'auto' || sta === 'manual') {
+
+      return res.send(JSON.parse(transformOneBox(box)));
+    }
+
     res.send(box);
   } catch (err) {
     handleError(err, next);
@@ -407,7 +422,6 @@ const getBox = async function getBox (req, res, next) {
  * @apiUse JWTokenAuth
  */
 const postNewBox = async function postNewBox (req, res, next) {
-  console.log('testetesestetteettset');
   try {
     let newBox = await req.user.addBox(req._userParams);
     newBox = await Box.populate(newBox, Box.BOX_SUB_PROPS_FOR_POPULATION);
@@ -544,6 +558,7 @@ module.exports = {
     retrieveParameters([
       { predef: 'boxId', required: true },
       { name: 'format', defaultValue: 'json', allowedValues: ['json', 'geojson'] },
+      { name: 'sta', defaultValue: 'false', allowedValues: ['false', 'auto', 'manual'] },
       { predef: 'toDate' },
       { predef: 'fromDate' },
       validateFromToTimeParams,
@@ -573,7 +588,8 @@ module.exports = {
   getBox: [
     retrieveParameters([
       { predef: 'boxId', required: true },
-      { name: 'format', defaultValue: 'json', allowedValues: ['json', 'geojson'] }
+      { name: 'format', defaultValue: 'json', allowedValues: ['json', 'geojson'] },
+      { name: 'sta', defaultValue: 'false', allowedValues: ['false', 'auto', 'manual'] } // NEW
     ]),
     getBox
   ],
@@ -587,6 +603,7 @@ module.exports = {
       { name: 'phenomenon', dataType: 'StringWithEmpty' },
       { name: 'date', dataType: ['RFC 3339'] },
       { name: 'format', defaultValue: 'json', allowedValues: ['json', 'geojson'] },
+      { name: 'sta', defaultValue: 'false', allowedValues: ['false', 'auto', 'manual'] }, // NEW
       { name: 'classify', defaultValue: 'false', allowedValues: ['true', 'false'] },
       { name: 'minimal', defaultValue: 'false', allowedValues: ['true', 'false'] },
       { name: 'full', defaultValue: 'false', allowedValues: ['true', 'false'] },

@@ -236,7 +236,6 @@ boxSchema.statics.initNew = function ({
 }) {
   // if model is not empty, get sensor definitions from products
   // otherwise, sensors should not be empty
-  console.log("init Box is called");
   if (model && sensors) {
     return Promise.reject(new ModelError('Parameters model and sensors cannot be specified at the same time.', { type: 'UnprocessableEntityError' }));
   } else if (model && !sensors) {
@@ -278,7 +277,6 @@ boxSchema.statics.initNew = function ({
   const access_token = crypto.randomBytes(32).toString('hex');
 
   // create box document and persist in database
-  console.log("before this.create");
   return this.create({
     name,
     currentLocation: boxLocation,
