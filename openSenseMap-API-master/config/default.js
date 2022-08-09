@@ -8,7 +8,7 @@ const defer = require('config/defer').deferConfig;
 
 const defaults = {
   'base_domain': 'localhost',
-  'protocol': 'https',
+  'protocol': 'http',
   'port': 8000,
   'api_url': '', // if not set, generated from api_protocol and api_base_domain
   'honeybadger_apikey': '',
@@ -18,7 +18,8 @@ const defaults = {
     'boxes': '/boxes',
     'users': '/users',
     'statistics': '/statistics',
-    'management': '/management'
+    'management': '/management',
+    'sta': '/v1.1'
   },
   'jwt': {
     'secret': 'OH GOD THIS IS SO INSECURE PLS CHANGE ME', // should be at least 32 characters

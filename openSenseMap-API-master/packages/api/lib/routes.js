@@ -10,6 +10,7 @@ const { usersController,
   { getVersion } = require('./helpers/apiUtils'),
   { verifyJwt } = require('./helpers/jwtHelpers'),
   { initUserParams, checkPrivilege } = require('./helpers/userParamHelpers');
+const staRedirect = require('./helpers/staUrlUtils');
 
 const spaces = function spaces (num) {
   let str = ' ';
@@ -67,7 +68,7 @@ const printRoutes = function printRoutes (req, res) {
   res.end(lines.join('\n'));
 };
 
-const { boxes: boxesPath, users: usersPath, statistics: statisticsPath, management: managementPath } = config.get('routes');
+const { boxes: boxesPath, users: usersPath, statistics: statisticsPath, management: managementPath, sta: staPath } = config.get('routes');
 // the ones matching first are used
 // case is ignored
 const routes = {
@@ -92,6 +93,18 @@ const routes = {
     { path: `${usersPath}/confirm-email`, method: 'post', handler: usersController.confirmEmailAddress, reference: 'api-Users-confirm-email' },
     { path: `${usersPath}/sign-in`, method: 'post', handler: usersController.signIn, reference: 'api-Users-sign-in' },
     { path: `${usersPath}/refresh-auth`, method: 'post', handler: usersController.refreshJWT, reference: 'api-Users-refresh-auth' }
+  ],
+  'staUrls': [
+    { path: `${staPath}/:param`, method: 'get', handler: staRedirect.redirectStandardStaURLs, reference: '' },
+    { path: `${staPath}/:param/Location`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
+    { path: `${staPath}/:param/Locations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
+    { path: `${staPath}/:param/Thing`, method: 'get', handler: staRedirect.redirectThingURLs, reference: '' },
+    { path: `${staPath}/:param/Things`, method: 'get', handler: staRedirect.redirectThingURLs, reference: '' },
+    { path: `${staPath}/:param/HistoricalLocation`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
+    { path: `${staPath}/:param/HistoricalLocations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
+    { path: `${staPath}/:param/Datastream`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
+    { path: `${staPath}/:param/Datastreams`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
+    { path: `${staPath}/:param/Observations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
   ],
   'auth': [
     { path: `${usersPath}/me`, method: 'get', handler: usersController.getUser, reference: 'api-Users-getUser' },
@@ -126,6 +139,9 @@ const initRoutes = function initRoutes (server) {
 
   // attach the routes
   for (const route of routes.noauth) {
+    server[route.method]({ path: route.path }, route.handler);
+  }
+  for (const route of routes.staUrls) {
     server[route.method]({ path: route.path }, route.handler);
   }
 
