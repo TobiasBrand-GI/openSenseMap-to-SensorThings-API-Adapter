@@ -25,7 +25,17 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
       .catch(error => {
         handleError(error, next);
       });
-  } else {
+  } else if (req.params.param.includes('Sensors')) {
+    axios
+      .get(`${config.api_url}:${config.port}/boxes`)
+      .then(response => {
+        res.send(staCreator.createSensors(response.data));
+      })
+      .catch(error => {
+        handleError(error, next);
+      });
+  }
+  else {
     res.send(notImplementedString);
   }
 };
@@ -67,9 +77,38 @@ const redirectDatastreamURLs = function redirectDatastreamURLs (req, res, next) 
     res.send(notImplementedString);
   }
 };
+
+const redirectSensorURLs = function redirectSensorURLs (req, res) {
+  if (req.params.param.includes('Things')) {
+    res.send('possible');
+  } else {
+    res.send(notImplementedString);
+  }
+};
+
+
+const redirectObservationURLs = function redirectObservationURLs (req, res) {
+  if (req.params.param.includes('Things')) {
+    res.send('possible');
+  } else {
+    res.send(notImplementedString);
+  }
+};
+
+const redirectPropertyURLs = function redirectPropertyURLs (req, res) {
+  if (req.params.param.includes('Things')) {
+    res.send('possible');
+  } else {
+    res.send(notImplementedString);
+  }
+};
+
 module.exports = {
   redirectStandardStaURLs,
   redirectLocationURLs,
   redirectThingURLs,
-  redirectDatastreamURLs
+  redirectDatastreamURLs,
+  redirectPropertyURLs,
+  redirectObservationURLs,
+  redirectSensorURLs
 };

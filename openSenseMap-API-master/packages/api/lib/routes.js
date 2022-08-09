@@ -104,7 +104,9 @@ const routes = {
     { path: `${staPath}/:param/HistoricalLocations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
     { path: `${staPath}/:param/Datastream`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
     { path: `${staPath}/:param/Datastreams`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
-    { path: `${staPath}/:param/Observations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
+    { path: `${staPath}/:param/Observations`, method: 'get', handler: staRedirect.redirectObservationURLs, reference: '' },
+    { path: `${staPath}/:param/ObservedProperty`, method: 'get', handler: staRedirect.redirectPropertyURLs, reference: '' },
+    { path: `${staPath}/:param/Sensor`, method: 'get', handler: staRedirect.redirectSensorURLs, reference: '' },
   ],
   'auth': [
     { path: `${usersPath}/me`, method: 'get', handler: usersController.getUser, reference: 'api-Users-getUser' },

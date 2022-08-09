@@ -72,7 +72,7 @@ const createSTADatastream = function createSTADatastream (box) {
     staDS['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})`;
     staDS['Thing@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/Thing`;
     staDS['Sensor@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/Sensor`;
-    staDS['ObervedProperty@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/ObervedProperty`;
+    staDS['ObervedProperty@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/ObservedProperty`;
     staDS['Observations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/Observations`;
     staDS['name'] = '';
     staDS['description'] = '';
@@ -132,10 +132,63 @@ const createUnitOfMeasurement = function createUnitOfMeasurement (sensor) {
 
   return JSON.parse(string);
 };
+
+const createSensors = function createSensors (data) {
+  const allSensors = getAllDiffSensors(data);
+  const allSensorsConvert = [];
+  let i = 0;
+  while (i < allSensors.length) {
+    const staSes = {};
+    staSes['@iot.id'] = allSensors[i]._id;
+    staSes['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Sensors(${staSes['@iot.id']})`;
+    staSes['Datastreams@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Sensors(${staSes['@iot.id']})/Datastreams`;
+    staSes['name'] = allSensors[i].title;
+    staSes['description'] = '';
+    staSes['encodingType'] = 'HTML';
+    staSes['metadata'] = createMetadatLink(allSensors[i].sensorType);
+    staSes['properties'] = { 'unit': allSensors[i].unit, 'sensorType': allSensors[i].sensorType };
+    allSensorsConvert.push(staSes);
+    ++i;
+  }
+
+  return allSensorsConvert;
+};
+
+const createMetadatLink = function createMetadatLink (type) {
+  const typeArray = ['AS7262', 'BME280', 'BME680', 'BMP085', 'BMP180', 'BMP280', 'CSM-M8Q', 'DHT11', 'DHT22', 'DS18B20', 'DS18S20', 'GL5528', 'Grove - Multichannel Gas Sensor', 'HDC1008', 'HDC1080', 'HM3301', 'HPM', 'HTU21D', 'LM35', 'LM386', 'MAX4465', 'NEO-6M', 'NO2-A43F', 'Optical Rain Gauge RG 15', 'OX-A431', 'PMS1003', 'PMS3003', 'PMS5003', 'PMS6003', 'PMS7003', 'PPD42NS', 'SBM-19', 'SBM-20', 'SCD30', 'SDS011', 'SDS021', 'SEN0232', 'SHT10', 'SHT11', 'SHT15', 'SHT30', 'SHT31', 'SHT35', 'SHT85', 'SI22G', 'SMT50', 'SPS30', 'TSL2561', 'TSL4531', 'TX20', 'VEML6070V2'];
+  if (typeArray.includes(type)) {
+    if (type === 'Grove - Multichannel Gas Sensor') { return 'https://sensors.wiki/sensor/detail/grove_-_multichannel_gas_sensor'; }
+    if (type === 'Optical Rain Gauge RG 15') { return 'https://sensors.wiki/sensor/detail/optical_rain_gauge_rg_15'; }
+
+    return `https://sensors.wiki/sensor/detail/${type}`.toLocaleLowerCase();
+  }
+
+  return 'This sensor does not have a metadata representation available.';
+};
+
+const getAllDiffSensors = function getAllDiffSensors (data) {
+  const diffSensorsControll = [];
+  const diffSensors = [];
+  let i = 0;
+  while (i < data.length) {
+    for (let j = 0; j < data[i].sensors.length; ++j) {
+      const sensor = data[i].sensors[j];
+      const controllStr = `${sensor.sensorType}${sensor.unit}`;
+      if (!diffSensorsControll.includes(controllStr)) {
+        diffSensorsControll.push(controllStr);
+        diffSensors.push(sensor);
+      }
+    }
+    ++i;
+  }
+
+  return diffSensors;
+};
 module.exports = {
   transformOne,
   transformOneBox,
   transformOneMeasurement,
   createSTALocation,
-  createSTADatastream
+  createSTADatastream,
+  createSensors
 };
