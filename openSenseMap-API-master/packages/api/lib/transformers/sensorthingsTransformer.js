@@ -1,6 +1,6 @@
 'use strict';
 
-const { transformOne } = require('../helpers/staUtils');
+const { transformOneBox } = require('../helpers/staUtils');
 
 const Transform = require('stream').Transform,
   inherits = require('util').inherits;
@@ -20,7 +20,7 @@ const sensorthingsTransformer = function (transformerOptions, streamOptions) {
 };
 
 sensorthingsTransformer.prototype._transform = function _transform (item, encoding, callback) {
-  this.push(transformOne(item));
+  this.push(transformOneBox(item));
   callback();
 };
 

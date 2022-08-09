@@ -32,12 +32,9 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
   const paramValue = getParamValue(req.params.param);
   if (req.params.param.includes('Things')) {
     axios
-      .get(`${config.api_url}:${config.port}/boxes/${paramValue}?sta=auto`)
+      .get(`${config.api_url}:${config.port}/boxes/${paramValue}`)
       .then(response => {
-        console.log(typeof response.data);
-        if (typeof response.data === String) {
-          res.send(JSON.parse(JSON.stringify(response.data)));
-        } else {res.send(response.data);}
+        res.send(staCreator.transformBoxes(response.data, paramValue));
       })
       .catch(error => {
         handleError(error, next);

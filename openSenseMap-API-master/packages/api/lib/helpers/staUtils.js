@@ -3,48 +3,49 @@
 const config = require('config');
 
 /**
- * Calls the specific transformation for the feature it is given.
- * @param {JSON} item. Can either be a box, a sensor or a measurement feature.
- * @returns converted feature as JSON String.
+ * Calls the box transformation either for all boxes or one specific box.
+ * @param {JSON} data Boxes from the openSenseMap API
+ * @param {String} id ID of the specifically selected box. If empty or null all boxes are transformed.
+ * @returns Array of transformed JSON Objects.
  */
-const transformOne = function transformOne (item) {
-  if (item.name && item.exposure && item.model) {
-    return transformOneBox(item);
-  } else if (item.value && item._id) {
-    return transformOneMeasurement(item);
+const transformBoxes = function transformBoxes (data, id) {
+  if (id === '' || id === {} || id === null) {
+    const allBoxes = [];
+    let i = 0;
+    while (i < data.length) {
+      allBoxes.push(transformOneBox(data[i]));
+      ++i;
+    }
+
+    return allBoxes;
   }
+
+  return transformOneBox(data);
 };
 
 /**
  * Takes a box entity from the OSeM database and converts it into a SensorThings API confirm Thing-Object.
  * @param {JSON} box The box enitity to be converted in SensorThings API confirm JSON-Structure.
- * @returns The converted box as a JSON String.
+ * @returns The converted box as a JSON Object.
  */
 const transformOneBox = function transformOneBox (box) {
-  const old = box;
-  const newBox = JSON.parse(JSON.stringify(old).split('"_id":')
-    .join('"@iot.id":'));
-  newBox['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Things(${old._id})`;
-  newBox['Locations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${old._id})/Locations`;
-  newBox['HistoricalLocations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${old._id})/HistoricalLocations`;
-  newBox['Datastreams@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${old._id})/Datastreams`;
-  delete newBox.name;
-  newBox.name = old.name;
-  if (old.description) {
-    delete newBox.description;
-    newBox.description = old.description;
-  } else {
-    newBox.description = '';
-  }
-  const properties = { 'lastMeasurementAt': newBox.lastMeasurementAt, 'exposure': newBox.exposure, 'createdAt': newBox.createdAt, 'model': newBox.model, 'updatedAt': newBox.updatedAt, 'grouptag': newBox.grouptag };
-  newBox.properties = properties;
-  ['lastMeasurementAt', 'sensors', 'loc', 'currentLocation', 'exposure', 'createdAt', 'model', 'updatedAt', 'grouptag'].forEach(e => delete newBox[e]);
+  const newBox = {};
+  newBox['@iot.id'] = box._id;
+  newBox['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Things(${box._id})`;
+  newBox['Locations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${box._id})/Locations`;
+  newBox['HistoricalLocations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${box._id})/HistoricalLocations`;
+  newBox['Datastreams@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Things(${box._id})/Datastreams`;
+  newBox['name'] = box.name;
+  newBox['description'] = box.description ? box.description : '';
+  newBox['properties'] = { 'lastMeasurementAt': box.lastMeasurementAt, 'exposure': box.exposure, 'createdAt': box.createdAt, 'model': box.model,
+    'updatedAt': box.updatedAt, 'grouptag': box.grouptag };
 
-  return JSON.stringify(newBox);
+  return newBox;
 };
 
 const transformOneMeasurement = function transformOneMeasurement (measurement) {
-  console.log(measurement);
+
+  return measurement;
 };
 
 /**
@@ -269,11 +270,9 @@ const getAllSensors = function getAllSensors (data, single, id) {
 };
 
 module.exports = {
-  transformOne,
-  transformOneBox,
+  transformBoxes,
   transformOneMeasurement,
   createSTALocation,
   createSTADatastream,
-  transformSensors,
-  transformOneSensor
+  transformSensors
 };
