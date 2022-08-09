@@ -7,6 +7,11 @@ const staCreator = require('../helpers/staUtils');
 
 const notImplementedString = 'Due to the internal structure of the openSenseMap, this API function is not supported yet!';
 
+/**
+ * Extracts a substring from between 2 parentheses.
+ * @param {String} string The string to be splittet.
+ * @returns substring.
+ */
 const splitParenthesesString = function splitParenthesesString (string) {
   const sub1 = string.split('(');
   const sub2 = sub1[1].split(')');
@@ -14,13 +19,25 @@ const splitParenthesesString = function splitParenthesesString (string) {
   return sub2[0];
 };
 
+const getParamValue = function getParamValue (param) {
+  let paramValue;
+  if (param.includes('(') && param.includes(')')) {
+    paramValue = splitParenthesesString(param);
+  } else { paramValue = ''; }
+
+  return paramValue;
+};
+
 const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next) {
+  const paramValue = getParamValue(req.params.param);
   if (req.params.param.includes('Things')) {
-    const paramValue = splitParenthesesString(req.params.param);
     axios
       .get(`${config.api_url}:${config.port}/boxes/${paramValue}?sta=auto`)
       .then(response => {
-        res.send(response.data);
+        console.log(typeof response.data);
+        if (typeof response.data === String) {
+          res.send(JSON.parse(JSON.stringify(response.data)));
+        } else {res.send(response.data);}
       })
       .catch(error => {
         handleError(error, next);
@@ -29,7 +46,16 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
     axios
       .get(`${config.api_url}:${config.port}/boxes`)
       .then(response => {
-        res.send(staCreator.createSensors(response.data));
+        res.send(staCreator.transformSensors(response.data, paramValue));
+      })
+      .catch(error => {
+        handleError(error, next);
+      });
+  } else if (req.params.param.includes('Observations')) {
+    axios
+      .get(`${config.api_url}:${config.port}/boxes`)
+      .then(response => {
+        res.send(staCreator.transformSensors(response.data, paramValue));
       })
       .catch(error => {
         handleError(error, next);
@@ -41,8 +67,8 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
 };
 
 const redirectLocationURLs = function redirectLocationURLs (req, res, next) {
+  const paramValue = getParamValue(req.params.param);
   if (req.params.param.includes('Things')) {
-    const paramValue = splitParenthesesString(req.params.param);
     axios
       .get(`${config.api_url}:${config.port}/boxes/${paramValue}`)
       .then(response => {
@@ -63,12 +89,21 @@ const redirectThingURLs = function redirectThingURLs (req, res) {
 };
 
 const redirectDatastreamURLs = function redirectDatastreamURLs (req, res, next) {
+  const paramValue = getParamValue(req.params.param);
   if (req.params.param.includes('Things')) {
-    const paramValue = splitParenthesesString(req.params.param);
     axios
       .get(`${config.api_url}:${config.port}/boxes/${paramValue}`)
       .then(response => {
-        res.send(staCreator.createSTADatastream(response.data));
+        res.send(staCreator.createSTADatastream(response.data, false, paramValue));
+      })
+      .catch(error => {
+        handleError(error, next);
+      });
+  } else if (req.params.param.includes('Sensors')) {
+    axios
+      .get(`${config.api_url}:${config.port}/boxes`)
+      .then(response => {
+        res.send(staCreator.createSTADatastream(response.data, true, paramValue));
       })
       .catch(error => {
         handleError(error, next);
