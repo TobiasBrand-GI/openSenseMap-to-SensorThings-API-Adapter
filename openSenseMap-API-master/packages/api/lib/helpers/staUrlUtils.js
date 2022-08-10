@@ -8,6 +8,7 @@ const staCreator = require('../helpers/staUtils');
 const notImplementedString = 'Due to the internal structure of the openSenseMap, this API function is not supported yet!';
 const wrongParamString = 'This parameter is not supported by this function:';
 const notExistString = 'Unknown resource. This address does not exist.';
+const possibilities = ['Datastreams', 'Locations', 'HistoricalLocations', 'Sensors', 'ObservedProperties', 'FeatureOfInterests', 'Observations', 'Things'];
 
 /**
  * Extracts a substring from between 2 parentheses.
@@ -62,7 +63,6 @@ const serverCapabilities = function serverCapabilities (req, res, next) {
 
 const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next) {
   const paramValue = getParamValue(req.params.param);
-  const rejectArray = [ 'ObservedProperties', 'Datastreams', 'FeatureOfInterests', 'Locations', 'HistoricalLocations' ];
   let resData;
   if (req.params.param.includes('Things')) {
     axios
@@ -84,7 +84,7 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
       .catch(error => {
         handleError(error, next);
       });
-  } else if (req.params.param.includes('Observations')) {
+  /*} else if (req.params.param.includes('Observations')) {
     axios
       .get(`${config.api_url}:${config.port}/boxes`)
       .then(response => {
@@ -93,23 +93,22 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
       })
       .catch(error => {
         handleError(error, next);
-      });
+      });*/
   }
-  else if (rejectArray.includes(req.params.param)) {
-    resData = notImplementedString;
+  else if ((possibilities.some(v => req.params.param.includes(v)))) {
+    return res.send(notImplementedString);
   }
   else {
-    resData = notExistString;
+    return res.send(notExistString);
   }
 
-  return resData;
+  return 1;
 };
 
 const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
   const paramValue = getParamValue(req.params.param);
   const nestValue = req.params.nest;
   const valueOnly = req.params.subrequest ? req.params.subrequest : '';
-  const possibilities = ['Datastreams', 'Locations', 'HistoricalLocations', 'Sensors', 'ObservedProperties', 'FeatureOfInterests', 'Observations', 'Things'];
   if (!['$value', '$ref', ''].includes(valueOnly)) {
     return res.send(`${wrongParamString} ${valueOnly}`);
   }
@@ -130,7 +129,7 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
                 resData = staCreator.createSTALocation(response.data.currentLocation);
                 break;
               case 'HistoricalLocations' :
-                resData = staCreator.createSTALocation(response.data.currentLocation);
+                resData = staCreator.createSTAHistLoc(response.data);
                 break;
               case 'Datastreams' :
                 resData = staCreator.createSTADatastream(response.data, false, paramValue);
@@ -181,7 +180,7 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
                 resData = staCreator.createSTADatastream(response.data, false, paramValue);
                 break;
               default :
-                if ((possibilities.includes(nestValue) && getParamValue(nestValue) !== '')) {
+                if (possibilities.some(v => nestValue.includes(v))) {
                   resData = notImplementedString;
                 }
                 else { resData = notExistString; }
@@ -192,23 +191,25 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
             .catch(error => {
               handleError(error, next);
             });
-        } else if (['Datastreams', 'ObservedProperties', 'FeatureOfInterests', 'Locations', 'HistoricalLocations'].includes(req.params.param)) {
-          resData = notImplementedString;
+        } else if ((possibilities.some(v => req.params.param.includes(v)))) {
+          return res.send(notImplementedString);
+        } else {
+          return res.send(notExistString);
         }
 
-        return resData;
+        return 1;
       }
 
       return res.send(`${notImplementedString}. Please select a nested parameter without an id like /Things(id)/Locations.`);
     } else if (nestValue[0].toUpperCase() !== nestValue[0]) {
       if (valueOnly === '$ref') {
-        return res.send('The parameter "$ref" is only supported by collection requests like /Things(id)/Datastreams');
+        return res.send('The parameter $ref is only supported by collection requests like /Things(id)/Datastreams');
       }
       if (req.params.param.includes('Things')) {
         axios
           .get(`${config.api_url}:${config.port}/v1.1/Things(${paramValue})`)
           .then(response => {
-            return valueOnly === '$value' ? res.send(staCreator.selectAttribute(response.data, nestValue, true)) : res.send(staCreator.selectAttribute(response.data, nestValue, false));
+            valueOnly === '$value' ? res.send(staCreator.selectAttribute(response.data, nestValue, true)) : res.send(staCreator.selectAttribute(response.data, nestValue, false));
           })
           .catch(error => {
             handleError(error, next);
@@ -217,12 +218,18 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
         axios
           .get(`${config.api_url}:${config.port}/v1.1/Sensors(${paramValue})`)
           .then(response => {
-            return valueOnly === '$value' ? res.send(staCreator.selectAttribute(response.data, nestValue, true)) : res.send(staCreator.selectAttribute(response.data, nestValue, false));
+            valueOnly === '$value' ? res.send(staCreator.selectAttribute(response.data, nestValue, true)) : res.send(staCreator.selectAttribute(response.data, nestValue, false));
           })
           .catch(error => {
             handleError(error, next);
           });
+      } else if ((possibilities.some(v => req.params.param.includes(v)))) {
+        return res.send(notImplementedString);
+      } else {
+        return res.send(notExistString);
       }
+
+      return 1;
     }
   }
 

@@ -43,10 +43,6 @@ const transformOneBox = function transformOneBox (box) {
   return newBox;
 };
 
-const transformOneMeasurement = function transformOneMeasurement (measurement) {
-
-  return measurement;
-};
 
 /**
  * Creates a Location entity according to SensorThings API Standards
@@ -66,6 +62,25 @@ const createSTALocation = function createSTALocation (location) {
   staLoc['properties'] = { 'timestamp': location.timestamp };
 
   return staLoc;
+};
+
+/**
+ * Creates a HistoricalLocation entity according to SensorThings API Standards.
+ * @param {GeoJSON} location Expects a GeoJSON feature, structured like {type, coordinates [long, lat]}.
+ * @returns a JSON feature HistoricalLocation.
+ */
+const createSTAHistLoc = function createSTAHistLoc (box) {
+  const staHist = {};
+  staHist['@iot.id'] = Date.now();
+  staHist['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/HistoricalLocations(${staHist['@iot.id']})`;
+  staHist['Things@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/HistoricalLocations(${staHist['@iot.id']})/Things`;
+  staHist['HistoricalLocations@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/HistoricalLocations(${staHist['@iot.id']})/Locations`;
+  staHist['time'] = box.currentLocation.timestamp;
+
+  const temp = {};
+  temp['value'] = [staHist];
+
+  return temp;
 };
 
 /**
@@ -111,7 +126,7 @@ const createOneDatastream = function createOneDatastream (sensor) {
   staDS['name'] = '';
   staDS['description'] = '';
   staDS['unitOfMeasurement'] = createUnitOfMeasurement(sensor);
-  staDS['observationType'] = staDS.unitOfMeasurement.name === 'Not found' ? 'OM_Observation' : 'OM_Measurement';
+  staDS['observationType'] = staDS.unitOfMeasurement.name === 'Not Specified' ? 'OM_Observation' : 'OM_Measurement';
   staDS['properties'] = {};
   staDS['observedArea'] = {};
   staDS['phenomenonTime'] = {};
@@ -164,7 +179,7 @@ const createUnitOfMeasurement = function createUnitOfMeasurement (sensor) {
     string = `{"name": ${'"Watt per square meter"'}, "symbol": "${unit}", "definition": "${defUrl}watt_per_square_meter"}`;
     break;
   default :
-    string = `{"name":  "${unit}", "symbol": "${unit}", "definition": "${defUrl}not_specified"}`;
+    string = `{"name":  "Not Specified", "symbol": "${unit}", "definition": "${defUrl}not_specified"}`;
   }
 
   return JSON.parse(string);
@@ -282,10 +297,60 @@ const selectAttribute = function selectAttribute (item, attribute, valueOnly) {
   return 'Attribute does not exist.';
 };
 
+
+const transformObservations = function transformObservations (measurement) {
+  transformOneObservation(measurement);
+};
+
+
+const transformOneObservation = function transformOneObservation (measurement) {
+  const staMeasure = {};
+  staMeasure['@iot.id'] = measurement._id;
+  staMeasure['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})`;
+  staMeasure['Datastream@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})/Datastream`;
+  staMeasure['FeatureOfInterest@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})/FeatureOfInterest`;
+  staMeasure['phenomenonTime'] = '';
+  staMeasure['result'] = measurement.value;
+  staMeasure['resultTime'] = measurement.createdAt;
+  staMeasure['resultQuality'] = {};
+  staMeasure['validTime'] = '';
+  staMeasure['parameters'] = {};
+
+  return staMeasure;
+};
+
+/*const createOneObservedProperty = function createOneObservedProperty (sensor) {
+  const staProp = {};
+  staProp['@iot.id'] = Date.now();
+  staProp['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/ObservedProperties(${staProp['@iot.id']})`;
+  staProp['Datastreams@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/ObservedProperties(${staProp['@iot.id']})/Datastream`;
+  staProp['phenomenonTime'] = '';
+  staProp['name'] = '';
+  staProp['definition'] = createUnitOfMeasurement(sensor).definition;
+  staProp['properties'] = {};
+
+  return staProp;
+};*/
+
+/*const createOneFeatureOfInterest = function createOneFeatureOfInterest (measurement) {
+  const staFeat = {};
+  staFeat['@iot.id'] = Date.now();
+  staFeat['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/FeaturesOfInterest(${staFeat['@iot.id']})`;
+  staFeat['Datastreams@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/FeaturesOfInterest(${staFeat['@iot.id']})/Observations`;
+  staFeat['name'] = '';
+  staFeat['description'] = '';
+  staFeat['encodingType'] = 'GeoJSON';
+  staFeat['feature'] = `{'coordinates':${measurement.location}}`;
+  staFeat['properties'] = {};
+
+  return staFeat;
+};*/
+
 module.exports = {
   transformBoxes,
-  transformOneMeasurement,
+  transformObservations,
   createSTALocation,
+  createSTAHistLoc,
   createSTADatastream,
   transformSensors,
   selectAttribute
