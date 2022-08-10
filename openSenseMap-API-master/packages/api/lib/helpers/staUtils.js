@@ -164,7 +164,7 @@ const createUnitOfMeasurement = function createUnitOfMeasurement (sensor) {
     string = `{"name": ${'"Watt per square meter"'}, "symbol": "${unit}", "definition": "${defUrl}watt_per_square_meter"}`;
     break;
   default :
-    string = `{"name": ${'"Not found"'}, "symbol": "${unit}", "definition": "${defUrl}not_specified"}`;
+    string = `{"name":  "${unit}", "symbol": "${unit}", "definition": "${defUrl}not_specified"}`;
   }
 
   return JSON.parse(string);
@@ -269,10 +269,24 @@ const getAllSensors = function getAllSensors (data, single, id) {
   return diffSensors;
 };
 
+const selectAttribute = function selectAttribute (item, attribute, valueOnly) {
+  if (item[attribute] !== undefined) {
+    if (valueOnly === true) {
+
+      return item[attribute];
+    }
+
+    return JSON.parse(`{"${attribute}": "${item[attribute]}"}`);
+  }
+
+  return 'Attribute does not exist.';
+};
+
 module.exports = {
   transformBoxes,
   transformOneMeasurement,
   createSTALocation,
   createSTADatastream,
-  transformSensors
+  transformSensors,
+  selectAttribute
 };
