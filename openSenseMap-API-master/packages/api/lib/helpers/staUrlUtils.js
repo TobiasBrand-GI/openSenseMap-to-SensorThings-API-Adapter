@@ -8,7 +8,7 @@ const staCreator = require('../helpers/staUtils');
 const notImplementedString = 'Due to the internal structure of the openSenseMap, this API function is not supported yet!';
 const wrongParamString = 'This parameter is not supported by this function:';
 const notExistString = 'Unknown resource. This address does not exist.';
-const possibilities = ['Datastreams', 'Locations', 'HistoricalLocations', 'Sensors', 'ObservedProperties', 'FeatureOfInterests', 'Observations', 'Things'];
+const possibilities = ['Datastreams', 'Locations', 'HistoricalLocations', 'Sensors', 'ObservedProperties', 'FeaturesOfInterest', 'Observations', 'Things'];
 
 /**
  * Extracts a substring from between 2 parentheses.
@@ -84,16 +84,16 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
       .catch(error => {
         handleError(error, next);
       });
-  /*} else if (req.params.param.includes('Observations')) {
+  } else if (req.params.param.includes('Datastreams')) {
     axios
       .get(`${config.api_url}:${config.port}/boxes`)
       .then(response => {
-        resData = sendLengthSpecific(staCreator.transformSensors(response.data, paramValue));
+        resData = staCreator.reverseCreateDatastream(response.data, paramValue, 'self');
         res.send(resData);
       })
       .catch(error => {
         handleError(error, next);
-      });*/
+      });
   }
   else if ((possibilities.some(v => req.params.param.includes(v)))) {
     return res.send(notImplementedString);
@@ -132,13 +132,10 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
                 resData = staCreator.createSTAHistLoc(response.data);
                 break;
               case 'Datastreams' :
-                resData = staCreator.createSTADatastream(response.data, false, paramValue);
+                resData = staCreator.createSTADatastream(response.data, 'thing', paramValue);
                 break;
               default :
-                if (possibilities.some(v => nestValue.includes(v))) {
-                  resData = `${wrongParamString} ${nestValue}`;
-                }
-                else { resData = notExistString; }
+                resData = notExistString;
                 break;
               }
               res.send(resData);
@@ -147,19 +144,15 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
               handleError(error, next);
             });
         } else if (req.params.param.includes('Sensors')) {
-          const possibilities = ['Datastreams'];
           axios
             .get(`${config.api_url}:${config.port}/boxes`)
             .then(response => {
               switch (nestValue) {
               case 'Datastreams' :
-                resData = staCreator.createSTADatastream(response.data, true, paramValue);
+                resData = staCreator.createSTADatastream(response.data, 'sensor', paramValue);
                 break;
               default :
-                if (possibilities.some(v => nestValue.includes(v))) {
-                  resData = `${wrongParamString} ${nestValue}`;
-                }
-                else { resData = notExistString; }
+                resData = notExistString;
                 break;
               }
               res.send(resData);
@@ -168,22 +161,44 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
               handleError(error, next);
             });
         } else if (req.params.param.includes('Observations')) {
-          const possibilities = ['Datastreams', 'FeatureOfInterest'];
           axios
             .get(`${config.api_url}:${config.port}/boxes`)
             .then(response => {
               switch (nestValue) {
               case 'Datastream' :
-                resData = staCreator.createSTADatastream(response.data, false, paramValue);
+                resData = notImplementedString;
                 break;
               case 'FeatureOfInterest' :
-                resData = staCreator.createSTADatastream(response.data, false, paramValue);
+                resData = staCreator.createOneFeatureOfInterest(staCreator.dummy_measurement);
                 break;
               default :
-                if (possibilities.some(v => nestValue.includes(v))) {
-                  resData = notImplementedString;
-                }
-                else { resData = notExistString; }
+                resData = `${notExistString}___${response}`;
+                break;
+              }
+              res.send(resData);
+            })
+            .catch(error => {
+              handleError(error, next);
+            });
+        } else if (req.params.param.includes('Datastreams')) {
+          axios
+            .get(`${config.api_url}:${config.port}/boxes`)
+            .then(response => {
+              switch (nestValue) {
+              case 'Thing' :
+                resData = staCreator.reverseCreateDatastream(response.data, paramValue, 'thing');
+                break;
+              case 'Sensor' :
+                resData = staCreator.reverseCreateDatastream(response.data, paramValue, 'sensor');
+                break;
+              case 'ObservedProperty' :
+                resData = staCreator.reverseCreateDatastream(response.data, paramValue, 'property');
+                break;
+              case 'Observations' :
+                resData = staCreator.reverseCreateDatastream(response.data, paramValue, 'observations');
+                break;
+              default :
+                resData = notExistString;
                 break;
               }
               res.send(resData);
@@ -201,7 +216,7 @@ const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
       }
 
       return res.send(`${notImplementedString}. Please select a nested parameter without an id like /Things(id)/Locations.`);
-    } else if (nestValue[0].toUpperCase() !== nestValue[0]) {
+    } else if (nestValue[0].toUpperCase() !== nestValue[0] || nestValue[0] === '@') {
       if (valueOnly === '$ref') {
         return res.send('The parameter $ref is only supported by collection requests like /Things(id)/Datastreams');
       }

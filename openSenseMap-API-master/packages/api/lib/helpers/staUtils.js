@@ -1,6 +1,12 @@
 'use strict';
 
 const config = require('config');
+const fs = require('fs');
+//const axios = require('axios');
+const datastream_ref_path = './datastream_reference.json';
+const dummy_measurement = {
+  _id: { '$oid': '62f13d3d7829f179c4333d49' }, value: '1.67', location: [7.569078, 51.994149], createdAt: '2022-08-08T16:26:34.815Z', sensor_id: { $oid: '5b3e7f6f5dc1ec001be11cf6' }
+};
 
 /**
  * Calls the box transformation either for all boxes or one specific box.
@@ -91,16 +97,26 @@ const createSTAHistLoc = function createSTAHistLoc (box) {
  */
 const createSTADatastream = function createSTADatastream (data, specific, id) {
   const returnString = [];
-  if (specific === false) {
+  if (specific === 'thing') {
     for (let i = 0; i < data.sensors.length; ++i) {
-      returnString.push(createOneDatastream(data.sensors[i]));
+      returnString.push(createOneDatastream(data.sensors[i], data._id));
     }
-  } else {
+  } else if (specific === 'sensor') {
     let i = 0;
     while (i < data.length) {
       for (let j = 0; j < data[i].sensors.length; ++j) {
         if (data[i].sensors[j]._id === id) {
-          returnString.push(createOneDatastream(data[i].sensors[j]));
+          returnString.push(createOneDatastream(data[i].sensors[j], data[i]._id));
+        }
+      }
+      ++i;
+    }
+  } else if (specific === 'datastream') {
+    let i = 0;
+    while (i < data.length) {
+      for (let j = 0; j < data[i].sensors.length; ++j) {
+        if (data[i].sensors[j]._id === id.sensor_id && data[i]._id === id.box_id) {
+          returnString.push(createOneDatastream(data[i].sensors[j], data[i]._id));
         }
       }
       ++i;
@@ -115,9 +131,23 @@ const createSTADatastream = function createSTADatastream (data, specific, id) {
  * @param {JSON} sensor JSON Object of a sensor from the openSenseMap API.
  * @returns JSON Object.
  */
-const createOneDatastream = function createOneDatastream (sensor) {
+const createOneDatastream = function createOneDatastream (sensor, boxID) {
+  let allreadyExists = false;
+  let existingID = '';
+  const refData = JSON.parse(fs.readFileSync(datastream_ref_path, { encoding: 'utf8', flag: 'r' }));
+  if (refData.references.length > 0) {
+    let i = 0;
+    while (i < refData.references.length) {
+      if (refData.references[i].box_id === boxID && refData.references[i].sensor_id === sensor._id) {
+        allreadyExists = true;
+        existingID = refData.references[i].ds_id;
+        i = refData.references.length;
+      }
+      ++i;
+    }
+  }
   const staDS = {};
-  staDS['@iot.id'] = Date.now();
+  staDS['@iot.id'] = allreadyExists === true ? existingID : Date.now().toString();
   staDS['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})`;
   staDS['Thing@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/Thing`;
   staDS['Sensor@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Datastreams(${staDS['@iot.id']})/Sensor`;
@@ -132,7 +162,56 @@ const createOneDatastream = function createOneDatastream (sensor) {
   staDS['phenomenonTime'] = {};
   staDS['resultTime'] = {};
 
+  if (allreadyExists === false) {
+    refData.references.push({ ds_id: staDS['@iot.id'], box_id: boxID, sensor_id: sensor._id });
+    fs.writeFileSync(datastream_ref_path, JSON.stringify(refData));
+  }
+
   return staDS;
+};
+
+const reverseCreateDatastream = function reverseCreateDatastream (boxes, datastreamID, mode) {
+  const refData = JSON.parse(fs.readFileSync(datastream_ref_path, { encoding: 'utf8', flag: 'r' }));
+  let dsDataset;
+  let i = 0;
+  while (i < refData.references.length) {
+    if (refData.references[i].ds_id === datastreamID) {
+      dsDataset = refData.references[i];
+      i = refData.references.length;
+    }
+    ++i;
+  }
+  let iterator = 0;
+  let returnData;
+  switch (mode) {
+  case 'thing' :
+    while (iterator < boxes.length) {
+      if (boxes[iterator]._id === dsDataset.box_id) {
+        returnData = transformBoxes(boxes[iterator], dsDataset.box_id);
+        iterator = boxes.length;
+      }
+      ++iterator;
+    }
+    break;
+  case 'sensor' :
+    returnData = transformSensors(boxes, dsDataset.sensor_id);
+    break;
+  case 'self' :
+    if (datastreamID === '' || datastreamID === undefined) {
+      returnData = 'Datastream ID not defined. Please submit a valid Datastream ID!';
+    } else {
+      returnData = createSTADatastream(boxes, 'datastream', dsDataset);
+    }
+    break;
+  case 'property' :
+    returnData = createOneObservedProperty(getAllSensors(boxes, true, dsDataset.sensor_id));
+    break;
+  case 'observations' :
+    returnData = transformOneObservation(dummy_measurement);
+    break;
+  }
+
+  return returnData;
 };
 
 /**
@@ -298,18 +377,23 @@ const selectAttribute = function selectAttribute (item, attribute, valueOnly) {
 };
 
 
-const transformObservations = function transformObservations (measurement) {
-  transformOneObservation(measurement);
-};
+// const transformObservations = function transformObservations (measurements) {
+//   const returnArray = [];
+//   for (let i = 0; i < measurements.length; ++i) {
+//     returnArray.push(transformOneObservation(measurements[i]));
+//   }
+
+//   return returnArray;
+// };
 
 
 const transformOneObservation = function transformOneObservation (measurement) {
   const staMeasure = {};
-  staMeasure['@iot.id'] = measurement._id;
+  staMeasure['@iot.id'] = `${Date.now()}_DummyObservation`;
   staMeasure['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})`;
   staMeasure['Datastream@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})/Datastream`;
   staMeasure['FeatureOfInterest@iot.navigationLink'] = `${config.api_url}:${config.port}/v1.1/Observations(${staMeasure['@iot.id']})/FeatureOfInterest`;
-  staMeasure['phenomenonTime'] = '';
+  staMeasure['phenomenonTime'] = measurement.createdAt;
   staMeasure['result'] = measurement.value;
   staMeasure['resultTime'] = measurement.createdAt;
   staMeasure['resultQuality'] = {};
@@ -319,7 +403,7 @@ const transformOneObservation = function transformOneObservation (measurement) {
   return staMeasure;
 };
 
-/*const createOneObservedProperty = function createOneObservedProperty (sensor) {
+const createOneObservedProperty = function createOneObservedProperty (sensor) {
   const staProp = {};
   staProp['@iot.id'] = Date.now();
   staProp['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/ObservedProperties(${staProp['@iot.id']})`;
@@ -330,9 +414,9 @@ const transformOneObservation = function transformOneObservation (measurement) {
   staProp['properties'] = {};
 
   return staProp;
-};*/
+};
 
-/*const createOneFeatureOfInterest = function createOneFeatureOfInterest (measurement) {
+const createOneFeatureOfInterest = function createOneFeatureOfInterest (measurement) {
   const staFeat = {};
   staFeat['@iot.id'] = Date.now();
   staFeat['@iot.selflink'] = `${config.api_url}:${config.port}/v1.1/FeaturesOfInterest(${staFeat['@iot.id']})`;
@@ -340,18 +424,31 @@ const transformOneObservation = function transformOneObservation (measurement) {
   staFeat['name'] = '';
   staFeat['description'] = '';
   staFeat['encodingType'] = 'GeoJSON';
-  staFeat['feature'] = `{'coordinates':${measurement.location}}`;
+  staFeat['feature'] = `{"type": "Point", "coordinates":${measurement.location}}`;
   staFeat['properties'] = {};
 
   return staFeat;
-};*/
+};
+
+// const getMeasurements = function getMeasurements (box_id, sensor_id) {
+//   return axios
+//     .get(`https://api.opensensemap.org/boxes/${box_id}/data/${sensor_id}`)
+//     .then(response => {
+//       this.resData = response.data;
+//     })
+//     .catch(error => {
+//       this.resData = `No measurements found ${error}`;
+//     });
+// };
 
 module.exports = {
   transformBoxes,
-  transformObservations,
   createSTALocation,
   createSTAHistLoc,
   createSTADatastream,
+  reverseCreateDatastream,
   transformSensors,
-  selectAttribute
+  selectAttribute,
+  createOneFeatureOfInterest,
+  dummy_measurement
 };
