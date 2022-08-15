@@ -94,7 +94,7 @@ const routes = {
     { path: `${usersPath}/sign-in`, method: 'post', handler: usersController.signIn, reference: 'api-Users-sign-in' },
     { path: `${usersPath}/refresh-auth`, method: 'post', handler: usersController.refreshJWT, reference: 'api-Users-refresh-auth' }
   ],
-  // ---- added for adapter -----
+  // ---------- added for STA Adapter -------------
   'staUrls': [
     { path: `${staPath}/`, method: 'get', handler: staRedirect.serverCapabilities, reference: '' },
     { path: `${staPath}/:param`, method: 'get', handler: staRedirect.redirectStandardStaURLs, reference: '' },
@@ -136,6 +136,7 @@ const initRoutes = function initRoutes (server) {
   for (const route of routes.noauth) {
     server[route.method]({ path: route.path }, route.handler);
   }
+  // --------------- Added for STA Adapter ----------------
   for (const route of routes.staUrls) {
     server[route.method]({ path: route.path }, route.handler);
   }
