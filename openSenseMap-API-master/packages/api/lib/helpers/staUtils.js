@@ -156,7 +156,7 @@ const createOneDatastream = function createOneDatastream (sensor, boxID) {
   staDS['name'] = '';
   staDS['description'] = '';
   staDS['unitOfMeasurement'] = createUnitOfMeasurement(sensor);
-  staDS['observationType'] = staDS.unitOfMeasurement.name === 'Not Specified' ? 'OM_Observation' : 'OM_Measurement';
+  staDS['observationType'] = staDS.unitOfMeasurement.name === 'Not Specified' ? 'http://defs.opengis.net/vocprez/object?uri=http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation' : 'http://defs.opengis.net/vocprez/object?uri=http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement';
   staDS['properties'] = {};
   staDS['observedArea'] = {};
   staDS['phenomenonTime'] = {};
