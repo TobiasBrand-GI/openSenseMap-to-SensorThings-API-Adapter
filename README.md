@@ -8,5 +8,5 @@ This software was created in the context of a Bachelors Thesis.
 This repository mostly consits of the already existing code of the [openSenseMap-API](https://github.com/sensebox/openSenseMap-API).
 
 
-For the adapter to work, two files, staUtils.js and staUrlUtils.js needed to be added, aswell as some new routes and a few confiq details in the default.js. All changes are clearly marked with comments.
+For the adapter to work, two files, [staUtils.js](./openSenseMap-API-master/packages/api/lib/helpers/staUtils.js) and [staUrlUtils.js](./openSenseMap-API-master/packages/api/lib/helpers/staUrlUtils.js) needed to be added, aswell as some new [routes](./openSenseMap-API-master/packages/api/lib/routes.js) and a few confiq details in the [default.js](./openSenseMap-API-master/config/default.js). All changes are clearly marked with comments.
 
