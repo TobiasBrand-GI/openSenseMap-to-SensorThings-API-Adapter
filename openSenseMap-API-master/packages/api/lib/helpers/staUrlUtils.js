@@ -5,6 +5,7 @@ const axios = require('axios');
 const config = require('config');
 const staCreator = require('../helpers/staUtils');
 
+// Globally used Strings
 const notImplementedString = 'Due to the internal structure of the openSenseMap, this API function is not supported yet!';
 const wrongParamString = 'This parameter is not supported by this function:';
 const notExistString = 'Unknown resource. This address does not exist.';
@@ -22,6 +23,11 @@ const splitParenthesesString = function splitParenthesesString (string) {
   return sub2[0];
 };
 
+/**
+ * Extract parameter value from URL parameters
+ * @param {*} param The URL parameter
+ * @returns parameter value
+ */
 const getParamValue = function getParamValue (param) {
   let paramValue;
   if (param.includes('(') && param.includes(')')) {
@@ -31,6 +37,11 @@ const getParamValue = function getParamValue (param) {
   return paramValue;
 };
 
+/**
+ * Creates the requested "value" array for larger responses
+ * @param {*} entities the entities to be send
+ * @returns Array "value" containing sent entities
+ */
 const sendLengthSpecific = function sendLengthSpecific (entities) {
   if (entities === {} || entities === []) {
     return JSON.parse('{[]}');
@@ -44,6 +55,9 @@ const sendLengthSpecific = function sendLengthSpecific (entities) {
   return { '@iot.count': entities.length, 'value': entities };
 };
 
+/**
+ * Returns the service capabilities of the adapter
+ */
 const serverCapabilities = function serverCapabilities (req, res, next) {
   try {
     const serverString = {};
@@ -61,6 +75,9 @@ const serverCapabilities = function serverCapabilities (req, res, next) {
   }
 };
 
+/**
+ * Handles requests from the /:param route. Calls neccessary functions to return requested Data.
+ */
 const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next) {
   const paramValue = getParamValue(req.params.param);
   let resData;
@@ -105,6 +122,9 @@ const redirectStandardStaURLs = function redirectStandardStaURLs (req, res, next
   return 1;
 };
 
+/**
+ * Handles requests from the /:param/:nest and /:param/:nest/:subrequest routes. Calls neccessary functions to return requested Data.
+ */
 const redirectNestedURLs = function redirectNestedURLs (req, res, next) {
   const paramValue = getParamValue(req.params.param);
   const nestValue = req.params.nest;

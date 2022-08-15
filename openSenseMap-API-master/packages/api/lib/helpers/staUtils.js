@@ -170,6 +170,13 @@ const createOneDatastream = function createOneDatastream (sensor, boxID) {
   return staDS;
 };
 
+/**
+ * Handles selfLink and anvigationLinks of a datastream
+ * @param {*} boxes all boxes that shall be checked
+ * @param {String} datastreamID Datastream ID from request
+ * @param {String} mode value to differentiate function calling. Allowed values = thing, sensor, self, property, observation
+ * @returns Called Data
+ */
 const reverseCreateDatastream = function reverseCreateDatastream (boxes, datastreamID, mode) {
   const refData = JSON.parse(fs.readFileSync(datastream_ref_path, { encoding: 'utf8', flag: 'r' }));
   let dsDataset;
@@ -301,7 +308,7 @@ const transformOneSensor = function transformOneSensor (sensor) {
   staSes['description'] = '';
   staSes['encodingType'] = 'HTML';
   staSes['metadata'] = createMetadatLink(sensor.sensorType);
-  staSes['properties'] = { 'unit': sensor.unit, 'sensorType': sensor.sensorType };
+  staSes['properties'] = { 'unit': sensor.unit, 'sensorType': sensor.sensorType, 'lastMeasurement': sensor.lastMeasurement };
 
   return staSes;
 };
@@ -363,6 +370,13 @@ const getAllSensors = function getAllSensors (data, single, id) {
   return diffSensors;
 };
 
+/**
+ * Selects a single Attribute or value to return
+ * @param {} item Item containing the attribute
+ * @param {*} attribute Name of attribute
+ * @param {Boolean} valueOnly if true, value nly will be returned
+ * @returns Data
+ */
 const selectAttribute = function selectAttribute (item, attribute, valueOnly) {
   if (item[attribute] !== undefined) {
     if (valueOnly === true) {
@@ -386,7 +400,11 @@ const selectAttribute = function selectAttribute (item, attribute, valueOnly) {
 //   return returnArray;
 // };
 
-
+/**
+ * Transforms a measurement into a STA Observation
+ * @param {*} measurement to be transformed
+ * @returns transformed measurement
+ */
 const transformOneObservation = function transformOneObservation (measurement) {
   const staMeasure = {};
   staMeasure['@iot.id'] = `${Date.now()}_DummyObservation`;
@@ -403,6 +421,11 @@ const transformOneObservation = function transformOneObservation (measurement) {
   return staMeasure;
 };
 
+/**
+ * Creates a STA ObservedProperty from sensor data
+ * @param {*} sensor containing the data.
+ * @returns ObservedProperty object
+ */
 const createOneObservedProperty = function createOneObservedProperty (sensor) {
   const staProp = {};
   staProp['@iot.id'] = Date.now();
@@ -416,6 +439,11 @@ const createOneObservedProperty = function createOneObservedProperty (sensor) {
   return staProp;
 };
 
+/**
+ * Creates a STA FeatureOfInterest from measurement data
+ * @param {*} measurement containing the data.
+ * @returns FeatureOfInterest object
+ */
 const createOneFeatureOfInterest = function createOneFeatureOfInterest (measurement) {
   const staFeat = {};
   staFeat['@iot.id'] = Date.now();

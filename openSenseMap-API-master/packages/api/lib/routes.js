@@ -94,21 +94,12 @@ const routes = {
     { path: `${usersPath}/sign-in`, method: 'post', handler: usersController.signIn, reference: 'api-Users-sign-in' },
     { path: `${usersPath}/refresh-auth`, method: 'post', handler: usersController.refreshJWT, reference: 'api-Users-refresh-auth' }
   ],
+  // ---- added for adapter -----
   'staUrls': [
     { path: `${staPath}/`, method: 'get', handler: staRedirect.serverCapabilities, reference: '' },
     { path: `${staPath}/:param`, method: 'get', handler: staRedirect.redirectStandardStaURLs, reference: '' },
     { path: `${staPath}/:param/:nest`, method: 'get', handler: staRedirect.redirectNestedURLs, reference: '' },
     { path: `${staPath}/:param/:nest/:subrequest`, method: 'get', handler: staRedirect.redirectNestedURLs, reference: '' },
-    // { path: `${staPath}/:param/Location`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
-    // { path: `${staPath}/:param/Locations`, method: 'get', handler: staRedirect.redirectLocationURLs, reference: '' },
-    // { path: `${staPath}/:param/Thing`, method: 'get', handler: staRedirect.redirectThingURLs, reference: '' },
-    // { path: `${staPath}/:param/Things`, method: 'get', handler: staRedirect.redirectThingURLs, reference: '' },
-    // { path: `${staPath}/:param/HistoricalLocations`, method: 'get', handler: staRedirect.redirectHistoricURLs, reference: '' },
-    // { path: `${staPath}/:param/Datastream`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
-    // { path: `${staPath}/:param/Datastreams`, method: 'get', handler: staRedirect.redirectDatastreamURLs, reference: '' },
-    // { path: `${staPath}/:param/Observations`, method: 'get', handler: staRedirect.redirectObservationURLs, reference: '' },
-    // { path: `${staPath}/:param/ObservedProperty`, method: 'get', handler: staRedirect.redirectPropertyURLs, reference: '' },
-    // { path: `${staPath}/:param/Sensor`, method: 'get', handler: staRedirect.redirectSensorURLs, reference: '' },
   ],
   'auth': [
     { path: `${usersPath}/me`, method: 'get', handler: usersController.getUser, reference: 'api-Users-getUser' },
